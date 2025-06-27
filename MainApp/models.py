@@ -18,4 +18,8 @@ class Snippet(models.Model):
     lang = models.CharField(max_length=30, choices=LANG_CHOICES)
     code = models.TextField(max_length=5000)  # -> textarea
     creation_date = models.DateTimeField(auto_now=True)
+<<<<<<< HEAD
     views_count = models.PositiveIntegerField(default=0)
+=======
+    views_count = models.PositiveIntegerField(default=0)
+>>>>>>> 5c59f3921485f4d8f4cb55e5a2f37f4cb95bbe2b
