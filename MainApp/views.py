@@ -1,8 +1,13 @@
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import F
 from MainApp.models import Snippet
 from MainApp.forms import SnippetForm
+from MainApp.models import LANG_ICON
 
+
+def get_icon(lang):
+    return LANG_ICON.get(lang)
 
 def index_page(request):
     context = {'pagename': 'PythonBin'}
@@ -27,15 +32,20 @@ def add_snippet_page(request):
 
 def snippets_page(request):
     snippets = Snippet.objects.all()
+    for snippet in snippets:
+        snippet.icon = get_icon(snippet.lang)
     context = {
         'pagename': 'Просмотр сниппетов',
-        'snippets': snippets
+        'snippets': snippets,
     }
     return render(request, 'pages/view_snippets.html', context)
 
 
 def snippet_detail(request, id):
     snippet = get_object_or_404(Snippet, id=id)
+    snippet.views_count = F('views_count') + 1
+    snippet.save(update_fields=['views_count'])
+    snippet.refresh_from_db()
     context = {
         "snippet": snippet
     }
