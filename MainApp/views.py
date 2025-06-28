@@ -29,7 +29,7 @@ def add_snippet_page(request):
             context = {'form': form, "pagename": "Создание сниппета"}
             return render(request, 'pages/add_snippet.html', context)
 
-
+#test
 def snippets_page(request):
     snippets = Snippet.objects.all()
     for snippet in snippets:
