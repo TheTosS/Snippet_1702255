@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 LANG_CHOICES = [
     ("python", "Python"),
@@ -9,8 +10,7 @@ LANG_CHOICES = [
 
 LANG_ICON = {
     "python": "fa-brands fa-python",
-    "javascript": "fa-brands fa-bitcoin",
-    "cpp": "fa-brands fa-unity",
+    "javascript": "fa-brands fa-js",
     "java": "fa-brands fa-java",
 }
 
@@ -19,8 +19,7 @@ class Snippet(models.Model):
     lang = models.CharField(max_length=30, choices=LANG_CHOICES)
     code = models.TextField(max_length=5000)  # -> textarea
     creation_date = models.DateTimeField(auto_now=True)
-
     views_count = models.PositiveIntegerField(default=0)
-
-
-
+    public = models.BooleanField(default=True)
+    user = models.ForeignKey(to=User, on_delete=models.CASCADE,
+                             blank=True, null=True)
