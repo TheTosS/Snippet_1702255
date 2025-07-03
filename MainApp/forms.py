@@ -1,5 +1,5 @@
 from django import forms
-from MainApp.models import Snippet
+from MainApp.models import Snippet, Comment
 from MainApp.models import LANG_CHOICES
 from django.contrib.auth.models import User
 
@@ -53,3 +53,9 @@ class UserRegistrationForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+
+class CommentForm(forms.ModelForm):
+   class Meta:
+      model = Comment
+      fields = ['text']

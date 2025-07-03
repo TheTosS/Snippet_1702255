@@ -14,6 +14,7 @@ LANG_ICON = {
     "java": "fa-brands fa-java",
 }
 
+
 class Snippet(models.Model):
     name = models.CharField(max_length=100)  # -> input
     lang = models.CharField(max_length=30, choices=LANG_CHOICES)
@@ -26,7 +27,7 @@ class Snippet(models.Model):
 
 
 class Comment(models.Model):
-   text = models.TextField()
-   creation_date = models.DateTimeField(auto_now_add=True)
-   author = models.ForeignKey(to=User, on_delete=models.SET_NULL, null=True)
-   snippet = models.ForeignKey(to=Snippet, on_delete=models.CASCADE)
+    text = models.TextField()
+    creation_date = models.DateTimeField(auto_now_add=True)
+    author = models.ForeignKey(to=User, on_delete=models.SET_NULL, null=True)
+    snippet = models.ForeignKey(to=Snippet, on_delete=models.CASCADE)
