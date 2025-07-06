@@ -1,11 +1,13 @@
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import F, Q
-from MainApp.models import Snippet, Comment
+from MainApp.models import Snippet, Comment, LANG_CHOICES
 from MainApp.forms import SnippetForm, UserRegistrationForm, CommentForm
 from MainApp.models import LANG_ICON
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.contrib.auth.models import User
 
 
 # from django.contrib.auth.forms import UserCreationForm
@@ -39,38 +41,80 @@ def add_snippet_page(request):
             return render(request, 'pages/add_snippet.html', context)
 
 
-def snippets_page(request):
-    if not request.user.is_authenticated:  # not auth: all public snippets
-        snippets = Snippet.objects.filter(public=True)
-    else:  # auth:     all public snippets + OR self private snippets
-        snippets = Snippet.objects.filter(Q(public=True) | Q(public=False, user=request.user))
+# snippets/list
+# snippets/list?sort=name
+# snippets/list?sort=lang
+# 1. Нет сортировки
+# 2. сортировка A-Z
+# 3. сортировка Z-A
+
+# snippets/list?page=3
+
+# /snippets/my?lang=python&user_id=1
+
+# @login_required
+# def snippets_my(request):
+#     snippets = Snippet.objects.filter(user=request.user)
+#     context = {
+#         'pagename': 'Мои сниппетов',
+#         'snippets': snippets,
+#     }
+#     return render(request, 'pages/view_snippets.html', context)
+
+
+def snippets_page(request, snippets_my):
+    if snippets_my:  # url: snippets/my
+        if not request.user.is_authenticated:
+            return HttpResponse('Unauthorized', status=401)
+        snippets = Snippet.objects.filter(user=request.user)
+    else:
+        if not request.user.is_authenticated:  # not auth: all public snippets
+            snippets = Snippet.objects.filter(public=True)
+        else:  # auth:     all public snippets + OR self private snippets
+            snippets = Snippet.objects.filter(Q(public=True) | Q(public=False, user=request.user))
+
+    # filter
+    lang = request.GET.get("lang")
+    if lang:
+        snippets = snippets.filter(lang=lang)
+    user_id = request.GET.get("user_id")
+    if user_id:
+        snippets = snippets.filter(user__id=user_id)
+
+    # sort
+    sort = request.GET.get("sort")
+    if sort:
+        snippets = snippets.order_by(sort)
 
     for snippet in snippets:
         snippet.icon = get_icon(snippet.lang)
+
+    # pagination
+    paginator = Paginator(snippets, 5)
+    num_page = request.GET.get("page")
+    page_obj = paginator.get_page(num_page)
+    # TODO: работает или пагинация или сортировка, но не вместе
+
     context = {
         'pagename': 'Просмотр сниппетов',
-        'snippets': snippets,
-    }
-    return render(request, 'pages/view_snippets.html', context)
-
-
-@login_required
-def snippets_my(request):
-    snippets = Snippet.objects.filter(user=request.user)
-    context = {
-        'pagename': 'Мои сниппетов',
-        'snippets': snippets,
+        'page_obj': page_obj,
+        'sort': sort,
+        'lang': lang,
+        'LANG_CHOICES': LANG_CHOICES,
+        'users': User.objects.all()
     }
     return render(request, 'pages/view_snippets.html', context)
 
 
 def snippet_detail(request, id):
-    snippet = get_object_or_404(Snippet, id=id)
+    # snippet = get_object_or_404(Snippet, id=id)
+    snippet = Snippet.objects.prefetch_related("comments").get(id=id)
     snippet.views_count = F('views_count') + 1
     snippet.save(update_fields=['views_count'])
     snippet.refresh_from_db()
     comments_form = CommentForm()
-    comments = Comment.objects.filter(snippet=snippet)
+    # comments = Comment.objects.filter(snippet=snippet)
+    comments = snippet.comments.all()
     context = {
         "snippet": snippet,
         "comments_form": comments_form,
@@ -149,17 +193,18 @@ def user_registration(request):
 
 
 def comment_add(request):
-   if request.method == "POST":
-      comment_form = CommentForm(request.POST)
-      snippet_id = request.POST.get('snippet_id') # Получаем ID сниппета из формы
-      snippet = get_object_or_404(Snippet, id=snippet_id)
+    if request.method == "POST":
+        comment_form = CommentForm(request.POST)
+        snippet_id = request.POST.get('snippet_id')  # Получаем ID сниппета из формы
+        snippet = get_object_or_404(Snippet, id=snippet_id)
 
-      if comment_form.is_valid():
-         comment = comment_form.save(commit=False)
-         comment.author = request.user # Текущий авторизованный пользователь
-         comment.snippet = snippet
-         comment.save()
+        if comment_form.is_valid():
+            comment = comment_form.save(commit=False)
+            comment.author = request.user  # Текущий авторизованный пользователь
+            comment.snippet = snippet
+            comment.save()
 
-      return redirect('snippet-detail', id=snippet_id) # Предполагаем, что у вас есть URL для деталей сниппета с параметром pk
+        return redirect('snippet-detail',
+                        id=snippet_id)  # Предполагаем, что у вас есть URL для деталей сниппета с параметром pk
 
-   raise Http404
+    raise Http404
