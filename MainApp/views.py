@@ -39,17 +39,30 @@ def add_snippet_page(request):
             return render(request, 'pages/add_snippet.html', context)
 
 
+# snippets/list
+# snippets/list?sort=name
+# snippets/list?sort=lang
+# 1. Нет сортировки
+# 2. сортировка A-Z
+# 3. сортировка Z-A
 def snippets_page(request):
+
     if not request.user.is_authenticated:  # not auth: all public snippets
         snippets = Snippet.objects.filter(public=True)
     else:  # auth:     all public snippets + OR self private snippets
         snippets = Snippet.objects.filter(Q(public=True) | Q(public=False, user=request.user))
+
+    # sort
+    sort = request.GET.get("sort")
+    if sort:
+        snippets = snippets.order_by(sort)
 
     for snippet in snippets:
         snippet.icon = get_icon(snippet.lang)
     context = {
         'pagename': 'Просмотр сниппетов',
         'snippets': snippets,
+        'sort': sort
     }
     return render(request, 'pages/view_snippets.html', context)
 
@@ -65,12 +78,14 @@ def snippets_my(request):
 
 
 def snippet_detail(request, id):
-    snippet = get_object_or_404(Snippet, id=id)
+    # snippet = get_object_or_404(Snippet, id=id)
+    snippet = Snippet.objects.prefetch_related("comments").get(id=id)
     snippet.views_count = F('views_count') + 1
     snippet.save(update_fields=['views_count'])
     snippet.refresh_from_db()
     comments_form = CommentForm()
-    comments = Comment.objects.filter(snippet=snippet)
+     #comments = Comment.objects.filter(snippet=snippet)
+    comments = snippet.comments.all()
     context = {
         "snippet": snippet,
         "comments_form": comments_form,
