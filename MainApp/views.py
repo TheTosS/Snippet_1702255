@@ -93,7 +93,7 @@ def snippets_page(request, snippets_my):
     paginator = Paginator(snippets, 5)
     num_page = request.GET.get("page")
     page_obj = paginator.get_page(num_page)
-    # TODO: работает или пагинация или сортировка, но не вместе
+    #  работает или пагинация или сортировка, но не вместе
 
     context = {
         'pagename': 'Просмотр сниппетов',
