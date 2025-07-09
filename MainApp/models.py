@@ -24,6 +24,7 @@ class Snippet(models.Model):
     public = models.BooleanField(default=True)
     user = models.ForeignKey(to=User, on_delete=models.CASCADE,
                              blank=True, null=True)
+    update_at = models.DateTimeField(auto_now=True, null=True)
 
 
 class Comment(models.Model):
